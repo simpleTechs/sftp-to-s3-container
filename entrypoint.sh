@@ -58,7 +58,7 @@ main() {
             OPTION_SSHUSER="${VALUE}"
             ;;
         --sshpubkey)
-            OPTION_SSHPUBKEY="${VALUE}"
+            OPTION_SSHPUBKEY="${VALUE//_/=}"
             ;;
         *)
             echo "ERROR: unknown parameter \"$PARAM\""
@@ -97,6 +97,7 @@ main() {
 
   log "Create user ${SSHUSER}"
   useradd -m -s /bin/false "${SSHUSER}" || err "Fail to create ${SSHUSER}"
+  USERID=$(id -u "$SSHUSER")
 
   log "Create ssh directory in user home"
   mkdir -vp "/home/${SSHUSER}/.ssh/" || err "Failed to create dir"
@@ -110,9 +111,9 @@ main() {
   chown -R "${SSHUSER}:${SSHUSER}" "/home/${SSHUSER}"
 
   log "Mount s3 bucket"
-  echo s3fs "${S3BUCKETNAME}:${S3BUCKETPATH}" "/mnt/${S3BUCKETNAME}" -f -o "${S3FSOPTIONS}"
+  echo s3fs "${S3BUCKETNAME}:${S3BUCKETPATH}" "/mnt/${S3BUCKETNAME}" -f -o "${S3FSOPTIONS}" -o uid="${USERID}"
   mkdir -p "/mnt/${S3BUCKETNAME}"
-  s3fs "${S3BUCKETNAME}:${S3BUCKETPATH}" "/mnt/${S3BUCKETNAME}" -f -o "${S3FSOPTIONS}" &
+  s3fs "${S3BUCKETNAME}:${S3BUCKETPATH}" "/mnt/${S3BUCKETNAME}" -f -o "${S3FSOPTIONS}" -o uid="${USERID}" &
   S3FS_PID=$!
 
   log "Start sshd daemon"
